@@ -168,3 +168,7 @@
     * `wins`
     * `losses`  
     * `queueType`
+
+# Modelagem de dados Final 
+
+![Modelo](img/drawSQL-image-export-2026-08-03.webp)
