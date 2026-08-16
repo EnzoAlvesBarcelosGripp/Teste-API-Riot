@@ -5,8 +5,6 @@ from dotenv import load_dotenv, find_dotenv
 from urllib.parse import quote
 import logging
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-
 class RiotAPIError(Exception):
     """Classe base para erros da API da Riot Games."""
     pass
@@ -47,7 +45,7 @@ class RiotAPIClient:
         """
         Obtém o PUUID (Player Universally Unique Identifier) de um jogador usando seu gamename e tagline.
         Se gamename e tagline não forem fornecidos, eles serão obtidos do arquivo .env.
-        Retorna o PUUID como string se encontrado, caso contrário retorna None.
+        Retorna o PUUID como string se encontrado, caso contrário levanta RiotAPIError.
         """
         gamename = gamename or os.getenv('GAME_NAME')   
         tagline = tagline or os.getenv('TAG_LINE')
@@ -66,7 +64,7 @@ class RiotAPIClient:
     def get_summonerid_by_puuid(self, puuid: str) -> str:
         """
         Obtém o Summoner ID de um jogador usando seu PUUID.
-        Retorna o Summoner ID como string se encontrado, caso contrário retorna None.
+        Retorna o Summoner ID como string se encontrado, caso contrário levanta RiotAPIError.
         """
         url = f"{self.base_url_br}/lol/summoner/v4/summoners/by-puuid/{puuid}"
         response = self._request(url)
@@ -94,8 +92,8 @@ class RiotAPIClient:
         - start: Índice inicial (padrão: 0).
         - count: Quantidade de IDs a retornar (0 a 100, padrão: 20).
         """
-        url = f"{self.base_url}/lol/match/v5/matches/by-puuid/{puuid}/ids"
 
+        url = f"{self.base_url}/lol/match/v5/matches/by-puuid/{puuid}/ids"
         params = {
             "startTime": start_time,
             "endTime": end_time,
@@ -104,15 +102,55 @@ class RiotAPIClient:
             "start": start,
             "count": count
         }
-        params = {key: value for key, value in params.items() if value is not None}
+        # calcula os lotes de 100
+        number_100_calls = count // 100
+        # o restante
+        rest_calls = count % 100
+        all_matchs_ids = []
 
-        response = self._request(url, params=params)
+        # Faz chamadas para o N° de lotes, ex: 220 chamadas, 2 lotes -> 2 chamadas
+        for i in range(number_100_calls):
+            # atualiza o start p/ o começo de cada lote
+            params['start'] = i * 100
+            # irá requisionar sempre 100 partidas
+            params['count'] = 100
+            # Retira os parametros None
+            params = {key: value for key, value in params.items() if value is not None}
+            
+            response = self._request(url, params=params)
 
-        if isinstance(response, list):
-            logging.info(f"Obtidos {len(response)} IDs de partidas para o PUUID: {puuid}.")
-            return response
-        logging.error(f"Erro ao obter IDs de partidas para o PUUID: {puuid}. Resposta: {response}")
-        raise RiotAPIError(f"Erro ao obter IDs de partidas para o PUUID: {puuid}, endpoint: {url}.")
+            # verifica se retornou uma lista não vazia
+            if isinstance(response, list) and response:
+                logging.info(f"Obtidos bloco N° {i} de IDs das partidas para o PUUID: {puuid}.")
+                # Adiciona os ids na lista, extend para não adicionamos listas de listas.
+                all_matchs_ids.extend(response)
+                # Se a resposta veio com menos de 100 partidas é preciso encerrar o loop, pois não há mais lotes de 100
+                if len(response) < 100:
+                    # retorna a lista, pois rest_calls não retornaria nenhuma partida
+                    return all_matchs_ids
+                else:
+                    # Se a resposta veio com 100 itens, há mais lotes ou encera o loop e rest_calls irá retornar o restante.
+                    continue
+            
+            logging.error(f"Erro ao obter IDs do bloco N° {i} de IDs das partidas para o PUUID: {puuid} | Resposta: {response}")
+            raise RiotAPIError(f"Erro ao obter IDs IDs do bloco N° {i} de IDs das partidas para o PUUID:  {puuid} | endpoint: {url}.")
+        # Havendo chamadas restantes
+        if rest_calls != 0 :
+            # atualiza start e count             
+            params['start'] = number_100_calls * 100
+            params['count'] = rest_calls
+
+            response = self._request(url,params=params)
+
+            if isinstance(response,list):
+                logging.info(f"Obtidos bloco N° {number_100_calls} de IDs das partidas para o PUUID: {puuid}.")
+                all_matchs_ids.extend(response)
+                return all_matchs_ids
+            logging.error(f"Erro ao obter IDs de partidas das {rest_calls} chamadas restantes o PUUID: {puuid} | Resposta: {response}")
+            raise RiotAPIError(f"Erro ao obter IDs de partidas das {rest_calls} chamadas restantes o PUUID: {puuid} | endpoint: {url}.")
+        else:
+            return all_matchs_ids
+        
     def get_match_info_by_matchid(self, match_id: str) -> dict :
         """
         Obtém os detalhes completos de uma partida pelo seu matchId.
