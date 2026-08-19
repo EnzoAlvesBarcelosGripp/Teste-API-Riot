@@ -1,1 +1,6 @@
 .env
+*.yml
+*.sh
+*.sql
+*.json
+*.log

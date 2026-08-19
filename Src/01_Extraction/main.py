@@ -1,9 +1,10 @@
 import logging
 import os
 import json
-from Endpoints import RiotAPIClient, RiotAPIError
 from datetime import datetime
+from Endpoints import RiotAPIClient, RiotAPIError
 from Static import DataDragon, DataDragonError
+from extract_static_infos import download_static_data_for_versions
 
 # path para a raiz do projeto
 SRC_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -100,12 +101,10 @@ def main():
             continue
 
     # Dados Estáticos
-    dragon = DataDragon()
     dragon_folder = os.path.join(LOAD_DIR, "DataDragon")
     try:
-        versions = dragon.get_list_versions()
-        if versions: 
-            save_json(versions, dragon_folder, "versions.json")
+        versions = download_static_data_for_versions(LOAD_DIR,path_info)
+        logging.info("Extração completa com sucesso!") 
     except DataDragonError as e:
         logging.error(f'Falha ao extrair lista de versões do Data Dragon: {e}')
 
