@@ -3,7 +3,7 @@ import os
 import json
 from datetime import datetime
 from Endpoints import RiotAPIClient, RiotAPIError
-from Static import DataDragon, DataDragonError
+from Static import  DataDragonError
 from extract_static_infos import download_static_data_for_versions
 
 # path para a raiz do projeto
