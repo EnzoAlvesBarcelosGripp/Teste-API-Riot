@@ -4,11 +4,13 @@ import logging
 import pandas as pd
 
 SRC_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUTPUT_DIR = os.path.join(SRC_DIR, "04_Load_final")
+OUTPUT_DIR = os.path.join(SRC_DIR, "05_Load_final")
+
 
 class FctPdlHistError(Exception):
     """Classe base para erros da Fct_pdl_hist."""
     pass
+
 
 class FctPdlHistTransformer:
     """Classe responsável por transformar o histórico de PDLs na Fct_pdl_hist."""
@@ -37,6 +39,16 @@ class FctPdlHistTransformer:
             logging.error(f"Erro ao carregar dim_player em {self.transform_dir}: {e}")
             raise FctPdlHistError(f"Falha ao inicializar mapa de jogadores principais: {e}")
 
+    def _get_latest_sk_time(self) -> int:
+        """Busca o sk_time mais recente presente na dim_time.csv."""
+        time_path = os.path.join(self.transform_dir, "dim_time.csv")
+        try:
+            df_time = pd.read_csv(time_path)
+            return int(df_time["sk_time"].max())
+        except Exception as e:
+            logging.error(f"Erro ao carregar dim_time em {self.transform_dir}: {e}")
+            raise FctPdlHistError(f"Não foi possível obter o sk_time da dim_time: {e}")
+
     def _to_absolute_pdl(self, tier: str, rank: str, lp: int) -> int:
         """Converte Tier, Rank e LP em uma pontuação absoluta contínua."""
         tier_val = self.TIER_ORDER.get(str(tier).upper(), 0)
@@ -57,7 +69,7 @@ class FctPdlHistTransformer:
         # Ordenação cronológica estrita
         df_pdl = df_pdl.sort_values(by=["sk_player", "sk_time"], ascending=True).reset_index(drop=True)
 
-        deltas = [0] # O primeiro registro histórico começa com delta 0
+        deltas = [0]  # O primeiro registro histórico começa com delta 0
 
         for i in range(1, len(df_pdl)):
             prev_row = df_pdl.iloc[i - 1]
@@ -73,25 +85,26 @@ class FctPdlHistTransformer:
         return df_pdl
 
     def transform_pdl_file(self, json_data: dict | list, file_timestamp: str, puuid: str) -> list[dict]:
-        """Processa o histórico de PDL apenas se o puuid pertencer à conta principal."""
+        """Associa o registro ao sk_time mais recente presente na dim_time."""
         sk_player = self.main_player_map.get(puuid)
-
         if not sk_player:
             return []
 
         entries = json_data if isinstance(json_data, list) else [json_data]
         records = []
+        latest_sk_time = self._get_latest_sk_time()
 
         for entry in entries:
-            records.append({
+            row = {
                 "sk_player": sk_player,
-                "sk_time": file_timestamp,
+                "sk_time": latest_sk_time,  # Chave 100% garantida na dim_time
                 "tier": entry.get("tier"),
                 "rank": entry.get("rank"),
                 "leaguePoints": entry.get("leaguePoints", 0),
                 "wins": entry.get("wins", 0),
                 "losses": entry.get("losses", 0)
-            })
+            }
+            records.append(row)
 
         return records
 
@@ -134,6 +147,8 @@ def transform_fct_pdl_hist(pdl_folder_path: str) -> pd.DataFrame:
     df_pdl = pd.DataFrame(all_records)
 
     if not df_pdl.empty:
+        # Mantém apenas o último snapshot por sk_time para evitar registros duplicados
+        df_pdl = df_pdl.drop_duplicates(subset=["sk_player", "sk_time"], keep="last")
         df_pdl = transformer._calculate_delta_pdl(df_pdl)
 
     final_path = os.path.join(OUTPUT_DIR, "fct_pdl_hist.csv")

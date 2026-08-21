@@ -4,7 +4,7 @@ import logging
 import pandas as pd
 
 SRC_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUTPUT_DIR = os.path.join(SRC_DIR, "04_Load_final")
+OUTPUT_DIR = os.path.join(SRC_DIR, "05_Load_final")
 
 class FctMatchParticipantError(Exception):
     """Classe base para erros da Fct_match_participant."""
@@ -269,7 +269,8 @@ class FctMatchParticipantTransformer:
             "sk_summoner1": sk_summoner1,
             "sk_summoner2": sk_summoner2,
 
-            # Combate 
+            # Combate
+            "kills": participant.get("kills",0), 
             "assists": participant.get("assists", 0),
             "deaths": participant.get("deaths", 0),
 

@@ -18,7 +18,7 @@ from fct_pdl import transform_fct_pdl_hist
 TRANSFORM_DIR = os.path.dirname(os.path.abspath(__file__))
 SRC_DIR = os.path.dirname(TRANSFORM_DIR)
 LOAD_DIR = os.path.join(SRC_DIR, "02_Load")
-OUTPUT_DIR = os.path.join(SRC_DIR, "04_Load_final")
+OUTPUT_DIR = os.path.join(SRC_DIR, "05_Load_final")
 
 
 def setup_logging() -> None:

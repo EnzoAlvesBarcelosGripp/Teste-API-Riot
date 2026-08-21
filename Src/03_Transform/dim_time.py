@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from dotenv import load_dotenv
 
 SRC_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUTPUT_DIR = os.path.join(SRC_DIR, "04_Load_final")
+OUTPUT_DIR = os.path.join(SRC_DIR, "05_Load_final")
 
 load_dotenv() # estava causando conflito .env.example
 

@@ -4,7 +4,7 @@ import pandas as pd
 import logging
 
 SRC_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUTPUT_DIR = os.path.join(SRC_DIR, "04_Load_final")
+OUTPUT_DIR = os.path.join(SRC_DIR, "05_Load_final")
 
 class dim_playerError(Exception):
     """Classe base para erros da transformação."""
