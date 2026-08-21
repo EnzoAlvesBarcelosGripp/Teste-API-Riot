@@ -3,6 +3,9 @@ import json
 import logging
 import pandas as pd
 
+SRC_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUTPUT_DIR = os.path.join(SRC_DIR, "04_Load_final")
+
 class Dim_infoMatchError(Exception):
     """Classe base para erros da transformação da Dim_info_match."""
     pass
@@ -27,13 +30,16 @@ def transform_dim_info_match(info_folder_path: str) -> pd.DataFrame:
                 with open(file_path, "r", encoding="utf-8") as f:
                     json_data = json.load(f)
 
+                info_data = json_data.get("info", {})
+
                 info_dict = {
-                    "sk_match": i, 
+                    "sk_info_match": i, 
                     "match_id": json_data.get("metadata", {}).get("matchId"),
-                    "game_creation": json_data.get("info", {}).get("gameCreation"),
-                    "game_duration": json_data.get("info", {}).get("gameDuration"),
-                    "game_version": json_data.get("info", {}).get("gameVersion"), 
-                    "game_mode": json_data.get("info", {}).get("gameMode"),  
+                    "game_duration": info_data.get("gameDuration"),
+                    "game_version": info_data.get("gameVersion"), 
+                    "platform_id": info_data.get("platformId"),
+                    "game_ended_in_surrender": info_data.get("gameEndedInSurrender"),
+                    "game_ended_in_early_surrender": info_data.get("gameEndedInEarlySurrender")
                 }
 
                 info_list.append(info_dict)
@@ -43,7 +49,8 @@ def transform_dim_info_match(info_folder_path: str) -> pd.DataFrame:
 
         df_info = pd.DataFrame(info_list)
 
-        final_path = "03_Transform/dim_info_match.csv"
+        final_path = os.path.join(OUTPUT_DIR, "dim_info_match.csv")
+        os.makedirs(os.path.dirname(final_path), exist_ok=True)
         df_info.to_csv(final_path, index=False)
 
         return df_info
