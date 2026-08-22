@@ -1,5 +1,6 @@
 import os 
 import json
+import gzip
 import pandas as pd
 import logging
 
@@ -27,10 +28,10 @@ def transform_dim_player(info_folder_path: str) -> pd.DataFrame:
         player_list = []
 
         for json_file in list_dir:
-            if not json_file.endswith(".json"):
+            if not json_file.endswith(".json.gz"):
                 continue
 
-            with open(os.path.join(info_folder_path, json_file), "r", encoding="utf-8") as f:
+            with gzip.open(os.path.join(info_folder_path, json_file), "rt", encoding="utf-8") as f:
                 json_data = json.load(f)
 
             info_data = json_data.get('info', {})

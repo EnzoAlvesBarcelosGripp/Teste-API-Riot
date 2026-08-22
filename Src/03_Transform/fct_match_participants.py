@@ -1,5 +1,6 @@
 import os
 import json
+import gzip
 import logging
 import pandas as pd
 
@@ -381,22 +382,22 @@ def transform_fct_match_participant(matches_folder: str, timelines_folder: str |
         raise FctMatchParticipantError(f"Falha ao acessar diretório {matches_folder}: {e}")
 
     for json_file in list_files:
-        if not json_file.endswith(".json"):
+        if not json_file.endswith(".json.gz"):
             continue
 
         match_path = os.path.join(matches_folder, json_file)
         try:
-            with open(match_path, "r", encoding="utf-8") as f:
+            with gzip.open(match_path, "rt", encoding="utf-8") as f:
                 match_json = json.load(f)
 
             timeline_json = None
             if timelines_folder:
-                match_id = json_file.replace("_info.json", "")
-                timeline_filename = f"{match_id}_timeline.json"
+                match_id = json_file.replace("_info.json.gz", "")
+                timeline_filename = f"{match_id}_timeline.json.gz"
                 timeline_path = os.path.join(timelines_folder, timeline_filename)
 
                 if os.path.exists(timeline_path):
-                    with open(timeline_path, "r", encoding="utf-8") as f:
+                    with gzip.open(timeline_path, "rt", encoding="utf-8") as f:
                         timeline_json = json.load(f)
 
             # Chama o método que pertence à classe FctMatchParticipantTransformer

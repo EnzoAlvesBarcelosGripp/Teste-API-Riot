@@ -1,5 +1,6 @@
 import os 
 import json
+import gzip
 import logging
 import pandas as pd
 
@@ -24,10 +25,10 @@ def transform_dim_info_match(info_folder_path: str) -> pd.DataFrame:
 
         # loop para cada arquivo dentro do diretório
         for json_file in list_dir:
-            if json_file.endswith(".json"):
+            if json_file.endswith(".json.gz"):
                 file_path = os.path.join(info_folder_path, json_file)
 
-                with open(file_path, "r", encoding="utf-8") as f:
+                with gzip.open(file_path, "rt", encoding="utf-8") as f:
                     json_data = json.load(f)
 
                 info_data = json_data.get("info", {})

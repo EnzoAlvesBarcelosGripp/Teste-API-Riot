@@ -1,6 +1,7 @@
 import json
 import os
 import logging
+import gzip
 from Static import DataDragon,DataDragonError
 
 def save_json(data: dict | list, folder_path: str, filename: str) -> None:
@@ -27,11 +28,12 @@ def get_game_versions_from_matches(info_folder_path: str) -> list[str]:
 
     # os.listdir retorna uma lista com os nomes de todos os arquivos em um path
     for file_name in os.listdir(info_folder_path):
-        if file_name.endswith('.json'):
-            # cria o path da partida
+        # Passamos a buscar pelos arquivos comprimidos
+        if file_name.endswith('.json.gz'):
             file_path = os.path.join(info_folder_path,file_name)
             try:
-                with open(file_path,'r',encoding='utf-8') as f:
+                # Usamos gzip.open em modo leitura de texto ('rt')
+                with gzip.open(file_path, 'rt', encoding='utf-8') as f:
                     data = json.load(f)
 
                     # Acessa o 'gameVersion' da partida, dentro do Nó 'Info'
@@ -96,15 +98,15 @@ def download_static_data_for_versions(load_dir: str, info_folder_path: str) -> N
             try:
                 # campeões
                 champions = dragon.get_champion_data()
-                save_json(champions,version_folder,'champion.json')
+                save_json(champions, version_folder, 'champion.json.gz')
 
                 # spells
                 summoners = dragon.get_summoner_spell_data()
-                save_json(summoners,version_folder,'summoner.json')
+                save_json(summoners,version_folder,'summoner.json.gz')
 
                 # runas
                 runes = dragon.get_runes_reforged_data()
-                save_json(runes,version_folder,'runesReforged.json')
+                save_json(runes,version_folder,'runesReforged.json.gz')
 
             except DataDragonError as e:
                 logging.error(f"Erro ao baixar dados para a versão {matching_version}: {e}")

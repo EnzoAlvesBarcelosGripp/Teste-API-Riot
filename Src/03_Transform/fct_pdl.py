@@ -1,5 +1,6 @@
 import os
 import json
+import gzip
 import logging
 import pandas as pd
 
@@ -121,15 +122,15 @@ def transform_fct_pdl_hist(pdl_folder_path: str) -> pd.DataFrame:
         raise FctPdlHistError(f"Erro ao acessar diretório {pdl_folder_path}: {e}")
 
     for json_file in list_dir:
-        if not json_file.endswith(".json"):
+        if not json_file.endswith(".json.gz"):
             continue    
 
         file_path = os.path.join(pdl_folder_path, json_file)
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with gzip.open(file_path, "rt", encoding="utf-8") as f:
                 entries = json.load(f)
 
-            filename_clean = json_file.replace(".json", "")
+            filename_clean = json_file.replace(".json.gz", "")
             parts = filename_clean.rsplit("_", 2)
 
             if len(parts) == 3:

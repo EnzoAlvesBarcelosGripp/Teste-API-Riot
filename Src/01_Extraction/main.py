@@ -1,6 +1,7 @@
 import logging
 import os
 import json
+import gzip
 from datetime import datetime
 from Endpoints import RiotAPIClient, RiotAPIError
 from Static import  DataDragonError
@@ -19,7 +20,7 @@ def save_json(data: dict | list, folder_path: str, filename: str) -> None:
     os.makedirs(folder_path, exist_ok=True)
     file_path = os.path.join(folder_path, filename)
     
-    with open(file_path, 'w', encoding='utf-8') as f:
+    with gzip.open(file_path, 'wt', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=4)    
 
     logging.info(f"Arquivo JSON salvo em: {file_path}")
@@ -59,7 +60,7 @@ def main():
         league_data = client.get_league_entries_by_puuid(puuid)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         league_folder = os.path.join(LOAD_DIR, "League-V4")
-        save_json(league_data, league_folder, f"{puuid}_{timestamp}.json")
+        save_json(league_data, league_folder, f"{puuid}_{timestamp}.json.gz")
     except RiotAPIError as e:
         logging.error(f'falha ao extrair liga, pulando etapa: {e}')
     match_ids = []
@@ -67,7 +68,7 @@ def main():
         # Extração de dados do endpoint Match-V5 usando o PUUID
         match_ids = client.get_match_ids_by_puuid(puuid, count=120)
         list_folder = os.path.join(LOAD_DIR, "Match-V5", "listMatchId")
-        save_json(match_ids, list_folder, f"{puuid}_matches.json")
+        save_json(match_ids, list_folder, f"{puuid}_matches.json.gz")
     except RiotAPIError as e:
         logging.error(f'falha ao extrair dados da partida, pulando etapa: {e}')
 
@@ -80,20 +81,20 @@ def main():
             path_timeline = os.path.join(LOAD_DIR, "Match-V5", "TimelineMatch")
 
             # Verifica se os arquivos já existem antes de salvar
-            if os.path.exists(os.path.join(path_info,f"{match_id}_info.json")):
+            if os.path.exists(os.path.join(path_info,f"{match_id}_info.json.gz")):
                     logging.info(f"Informações da partida {match_id} já existem. Pulando a extração.")
             else:
                 # Extração de informações detalhadas da partida e do timeline 
                 info = client.get_match_info_by_matchid(match_id)
-                save_json(info, path_info,f"{match_id}_info.json")
+                save_json(info, path_info,f"{match_id}_info.json.gz")
                 logging.info(f"[{i}/{len(match_ids)}] Processando partida: {match_id}")
 
-            if os.path.exists(os.path.join(path_timeline,f"{match_id}_timeline.json")):
+            if os.path.exists(os.path.join(path_timeline,f"{match_id}_timeline.json.gz")):
                 logging.info(f"Timeline da partida {match_id} já existe. Pulando a extração.")
             else:
                # Extração do timeline completa da partida para depois filtrar até o minuto 15)
                 timeline = client.extract_early_game_timeline(match_id, max_minute=15)
-                save_json(timeline, path_timeline,f"{match_id}_timeline.json")
+                save_json(timeline, path_timeline,f"{match_id}_timeline.json.gz")
                 logging.info(f"[{i}/{len(match_ids)}] Processando partida: {match_id}")
 
         except RiotAPIError as e:
